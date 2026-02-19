@@ -27,8 +27,9 @@ void Map::cargarMapa(int tipo) {
 void Map::generarMapaClasico() {
     float TILE_SIZE = 40.0f;
     float MEDIO = TILE_SIZE / 2.0f;
-    int COLUMNAS = 800 / (int)TILE_SIZE;
-    int FILAS = 600 / (int)TILE_SIZE;
+
+    int COLUMNAS = 40;
+    int FILAS = 40;
 
     for (int fila = 0; fila < FILAS; fila++) {
         for (int col = 0; col < COLUMNAS; col++) {

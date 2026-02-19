@@ -10,10 +10,8 @@ void limpiarLista(ListaEnlazada<T*>& lista) {
         if (!actual->dato->activo) {
             delete actual->dato;
             auto aBorrar = actual;
-
             if (previo) previo->siguiente = actual->siguiente;
             else lista.cabeza = actual->siguiente;
-
             actual = actual->siguiente;
             delete aBorrar;
         } else {
@@ -21,6 +19,15 @@ void limpiarLista(ListaEnlazada<T*>& lista) {
             actual = actual->siguiente;
         }
     }
+}
+
+// --- NUEVO: Función auxiliar para contar elementos en una lista ---
+template<typename T>
+int contarLista(const ListaEnlazada<T*>& lista) {
+    int contador = 0;
+    auto actual = lista.cabeza;
+    while (actual) { contador++; actual = actual->siguiente; }
+    return contador;
 }
 
 Game::Game(int screenWidth, int screenHeight) {
@@ -32,8 +39,15 @@ Game::Game(int screenWidth, int screenHeight) {
     mapa = new Map();
     mapa->cargarMapa(1);
     quadtree = nullptr;
-
     gameOver = false;
+
+    totalEntidades = 0;
+    colisionesComprobadas = 0;
+
+    camara.target = {jugador->caja.centro.x, jugador->caja.centro.y};
+    camara.offset = {width / 2.0f, height / 2.0f};
+    camara.rotation = 0.0f;
+    camara.zoom = 1.0f;
 }
 
 Game::~Game() {
@@ -46,6 +60,8 @@ Game::~Game() {
 
 void Game::handleInput(float dt) {
     if (!jugador->activo) return;
+
+    colisionesComprobadas = 0; // Reiniciamos el contador cada frame
 
     float vel = jugador->velocidad * dt;
     float dx = 0.0f;
@@ -65,17 +81,15 @@ void Game::handleInput(float dt) {
     }
 
     if (quadtree) delete quadtree;
-    quadtree = new Quadtree<Entity>(AABB{{width/2.0f, height/2.0f}, width/2.0f}, 4);
+    quadtree = new Quadtree<Entity>(AABB{{800.0f, 800.0f}, 800.0f}, 4);
 
     auto m = mapa->muros.cabeza; while(m) { if(m->dato->activo) quadtree->insertar(m->dato); m = m->siguiente; }
     auto b = bombas.cabeza;      while(b) { if(b->dato->activo) quadtree->insertar(b->dato); b = b->siguiente; }
     auto e = explosiones.cabeza; while(e) { if(e->dato->activo) quadtree->insertar(e->dato); e = e->siguiente; }
     auto p = powerups.cabeza;    while(p) { if(p->dato->activo) quadtree->insertar(p->dato); p = p->siguiente; }
 
-    // --- EVALUAR EJE X ---
     if (dx != 0.0f) {
-        Punto futuroX = jugador->caja.centro;
-        futuroX.x += dx;
+        Punto futuroX = jugador->caja.centro; futuroX.x += dx;
         AABB cajaX = {futuroX, jugador->caja.medio};
 
         Quadtree<Entity>::Nodo* resX = nullptr;
@@ -84,19 +98,13 @@ void Game::handleInput(float dt) {
 
         auto actualX = resX;
         while (actualX) {
-            Entity* ent = actualX->datos;
+            colisionesComprobadas++; // SUMAMOS UNA COMPROBACIÓN
 
-            // ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE!
-            // Separamos la bomba del "else if" sólido.
-            if (ent->tipo == TIPO_BOMBA) {
-                if (!((Bomb*)ent)->recienColocada) chocaX = true;
-            }
-            else if (ent->solido) {
-                chocaX = true;
-            }
+            Entity* ent = actualX->datos;
+            if (ent->tipo == TIPO_BOMBA) { if (!((Bomb*)ent)->recienColocada) chocaX = true; }
+            else if (ent->solido) { chocaX = true; }
 
             if (ent->tipo == TIPO_EXPLOSION) jugador->activo = false;
-
             if (ent->tipo == TIPO_POWERUP && ent->activo) {
                 ent->activo = false;
                 PowerUp* pwr = (PowerUp*)ent;
@@ -104,19 +112,13 @@ void Game::handleInput(float dt) {
                 if (pwr->tipoPoder == PWR_FUEGO) jugador->poderFuego++;
                 if (pwr->tipoPoder == PWR_VELOCIDAD) jugador->velocidad += 50.0f;
             }
-
-            auto aBorrar = actualX;
-            actualX = actualX->siguiente;
-            delete aBorrar;
+            auto aBorrar = actualX; actualX = actualX->siguiente; delete aBorrar;
         }
-
         if (!chocaX) jugador->caja.centro.x = futuroX.x;
     }
 
-    // --- EVALUAR EJE Y ---
     if (dy != 0.0f) {
-        Punto futuroY = jugador->caja.centro;
-        futuroY.y += dy;
+        Punto futuroY = jugador->caja.centro; futuroY.y += dy;
         AABB cajaY = {futuroY, jugador->caja.medio};
 
         Quadtree<Entity>::Nodo* resY = nullptr;
@@ -125,18 +127,13 @@ void Game::handleInput(float dt) {
 
         auto actualY = resY;
         while (actualY) {
-            Entity* ent = actualY->datos;
+            colisionesComprobadas++; // SUMAMOS UNA COMPROBACIÓN
 
-            // ¡LA MISMA CORRECCIÓN EN Y!
-            if (ent->tipo == TIPO_BOMBA) {
-                if (!((Bomb*)ent)->recienColocada) chocaY = true;
-            }
-            else if (ent->solido) {
-                chocaY = true;
-            }
+            Entity* ent = actualY->datos;
+            if (ent->tipo == TIPO_BOMBA) { if (!((Bomb*)ent)->recienColocada) chocaY = true; }
+            else if (ent->solido) { chocaY = true; }
 
             if (ent->tipo == TIPO_EXPLOSION) jugador->activo = false;
-
             if (ent->tipo == TIPO_POWERUP && ent->activo) {
                 ent->activo = false;
                 PowerUp* pwr = (PowerUp*)ent;
@@ -144,21 +141,15 @@ void Game::handleInput(float dt) {
                 if (pwr->tipoPoder == PWR_FUEGO) jugador->poderFuego++;
                 if (pwr->tipoPoder == PWR_VELOCIDAD) jugador->velocidad += 50.0f;
             }
-
-            auto aBorrar = actualY;
-            actualY = actualY->siguiente;
-            delete aBorrar;
+            auto aBorrar = actualY; actualY = actualY->siguiente; delete aBorrar;
         }
-
         if (!chocaY) jugador->caja.centro.y = futuroY.y;
     }
 }
 
 void Game::generarExplosion(float centroX, float centroY, int poder) {
     float TILE = 40.0f;
-
     explosiones.insertar(new Explosion(centroX, centroY));
-
     float direcciones[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
     for (int d = 0; d < 4; d++) {
@@ -174,23 +165,19 @@ void Game::generarExplosion(float centroX, float centroY, int poder) {
             auto actualResult = resultados;
 
             while (actualResult) {
-                Entity* colision = actualResult->datos;
+                colisionesComprobadas++; // SUMAMOS COMPROBACIÓN DEL FUEGO
 
-                if (colision->tipo == TIPO_MURO_INDESTRUCTIBLE) {
-                    detenerFuego = true;
-                }
+                Entity* colision = actualResult->datos;
+                if (colision->tipo == TIPO_MURO_INDESTRUCTIBLE) detenerFuego = true;
                 else if (colision->tipo == TIPO_MURO_DESTRUCTIBLE) {
                     colision->activo = false;
                     detenerFuego = true;
-
                     if (rand() % 100 < 30) {
                         TipoPowerUp tipoAzar;
                         int dado = rand() % 3;
-
                         if (dado == 0) tipoAzar = PWR_FUEGO;
                         else if (dado == 1) tipoAzar = PWR_BOMBA;
                         else tipoAzar = PWR_VELOCIDAD;
-
                         powerups.insertar(new PowerUp(testX, testY, tipoAzar));
                     }
                 }
@@ -198,12 +185,8 @@ void Game::generarExplosion(float centroX, float centroY, int poder) {
                     Bomb* otraBomba = (Bomb*)colision;
                     otraBomba->tiempoRestante = 0.0f;
                 }
-
-                auto aBorrar = actualResult;
-                actualResult = actualResult->siguiente;
-                delete aBorrar;
+                auto aBorrar = actualResult; actualResult = actualResult->siguiente; delete aBorrar;
             }
-
             if (detenerFuego) break;
             else explosiones.insertar(new Explosion(testX, testY));
         }
@@ -216,9 +199,9 @@ void Game::update(float dt) {
     handleInput(dt);
     jugador->update(dt);
 
-    if (!jugador->activo) {
-        gameOver = true;
-    }
+    camara.target = {jugador->caja.centro.x, jugador->caja.centro.y};
+
+    if (!jugador->activo) gameOver = true;
 
     auto b = bombas.cabeza;
     while(b) {
@@ -233,6 +216,8 @@ void Game::update(float dt) {
     auto e = explosiones.cabeza; while(e) { e->dato->update(dt); e = e->siguiente; }
 
     limpiarEntidadesInactivas();
+
+    totalEntidades = contarLista(mapa->muros) + contarLista(bombas) + contarLista(explosiones) + contarLista(powerups) + 1; // +1 del Jugador
 }
 
 void Game::limpiarEntidadesInactivas() {
@@ -246,13 +231,31 @@ void Game::render() {
     BeginDrawing();
     ClearBackground(RAYWHITE);
 
-    mapa->draw();
+    BeginMode2D(camara);
 
+    mapa->draw();
     auto p = powerups.cabeza;    while(p) { p->dato->draw(); p = p->siguiente; }
     auto b = bombas.cabeza;      while(b) { b->dato->draw(); b = b->siguiente; }
     auto e = explosiones.cabeza; while(e) { e->dato->draw(); e = e->siguiente; }
 
     if (jugador->activo) jugador->draw();
+    if (quadtree) quadtree->draw();
+
+    EndMode2D();
+
+
+    int hudX = width - 230;
+    DrawRectangle(hudX, 10, 220, 140, Fade(BLACK, 0.7f));
+    DrawRectangleLines(hudX, 10, 220, 140, LIGHTGRAY); // Un borde bonito
+
+    DrawText("RENDIMIENTO QUADTREE", hudX + 10, 20, 10, GREEN);
+    DrawText(TextFormat("Total Entidades: %d", totalEntidades), hudX + 10, 35, 10, WHITE);
+    DrawText(TextFormat("Comprobaciones: %d", colisionesComprobadas), hudX + 10, 50, 10, RED);
+
+    DrawText("ESTADISTICAS JUGADOR", hudX + 10, 80, 10, YELLOW);
+    DrawText(TextFormat("Bombas Max: %d", jugador->maxBombas), hudX + 10, 95, 10, WHITE);
+    DrawText(TextFormat("Fuego Rango: %d", jugador->poderFuego), hudX + 10, 110, 10, WHITE);
+    DrawText(TextFormat("Velocidad: %d", (int)jugador->velocidad), hudX + 10, 125, 10, WHITE);
 
     if (gameOver) {
         DrawRectangle(0, height/2 - 60, width, 120, Fade(BLACK, 0.8f));

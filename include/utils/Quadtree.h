@@ -1,6 +1,7 @@
 #ifndef QUADTREE_H
 #define QUADTREE_H
 
+#include <raylib.h> // NUEVO: Necesario para dibujar las líneas
 #include "core/Types.h"
 
 template <typename T>
@@ -49,7 +50,6 @@ public:
 
         if (!dividido) subdividir();
 
-        // Intentamos insertarlo en todos los que toque.
         bool insertado = false;
         if (noroeste->insertar(data)) insertado = true;
         if (noreste->insertar(data)) insertado = true;
@@ -60,7 +60,6 @@ public:
     }
 
     void consultar(AABB rango, Nodo** listaResultados) {
-        // Si el rango de búsqueda no toca este cuadrante, salimos rápido
         if (!limite.intersecta(rango)) return;
 
         Nodo* actual = objetos;
@@ -87,6 +86,23 @@ public:
         if (dividido) {
             delete noroeste; delete noreste; delete suroeste; delete sureste;
             dividido = false;
+        }
+    }
+
+    void draw() {
+        DrawRectangleLines(
+            (int)(limite.centro.x - limite.medio),
+            (int)(limite.centro.y - limite.medio),
+            (int)(limite.medio * 2),
+            (int)(limite.medio * 2),
+            RED
+        );
+
+        if (dividido) {
+            noroeste->draw();
+            noreste->draw();
+            suroeste->draw();
+            sureste->draw();
         }
     }
 };

@@ -22,6 +22,10 @@ private:
     ListaEnlazada<PowerUp*> powerups;
 
     bool gameOver;
+    Camera2D camara;
+
+    int totalEntidades;
+    int colisionesComprobadas;
 
 public:
     Game(int screenWidth, int screenHeight);
@@ -32,9 +36,7 @@ private:
     void handleInput(float dt);
     void update(float dt);
     void render();
-
     void generarExplosion(float centroX, float centroY, int poder);
-
     void limpiarEntidadesInactivas();
 };
 
