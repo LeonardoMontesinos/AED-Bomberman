@@ -67,13 +67,12 @@ void Game::handleInput(float dt) {
     if (quadtree) delete quadtree;
     quadtree = new Quadtree<Entity>(AABB{{width/2.0f, height/2.0f}, width/2.0f}, 4);
 
-
     auto m = mapa->muros.cabeza; while(m) { if(m->dato->activo) quadtree->insertar(m->dato); m = m->siguiente; }
     auto b = bombas.cabeza;      while(b) { if(b->dato->activo) quadtree->insertar(b->dato); b = b->siguiente; }
     auto e = explosiones.cabeza; while(e) { if(e->dato->activo) quadtree->insertar(e->dato); e = e->siguiente; }
     auto p = powerups.cabeza;    while(p) { if(p->dato->activo) quadtree->insertar(p->dato); p = p->siguiente; }
 
-    //  EVALUAR EJE X
+    // --- EVALUAR EJE X ---
     if (dx != 0.0f) {
         Punto futuroX = jugador->caja.centro;
         futuroX.x += dx;
@@ -87,8 +86,14 @@ void Game::handleInput(float dt) {
         while (actualX) {
             Entity* ent = actualX->datos;
 
-            if (ent->tipo == TIPO_BOMBA && !((Bomb*)ent)->recienColocada) chocaX = true;
-            else if (ent->solido) chocaX = true;
+            // ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE!
+            // Separamos la bomba del "else if" sólido.
+            if (ent->tipo == TIPO_BOMBA) {
+                if (!((Bomb*)ent)->recienColocada) chocaX = true;
+            }
+            else if (ent->solido) {
+                chocaX = true;
+            }
 
             if (ent->tipo == TIPO_EXPLOSION) jugador->activo = false;
 
@@ -108,7 +113,7 @@ void Game::handleInput(float dt) {
         if (!chocaX) jugador->caja.centro.x = futuroX.x;
     }
 
-    // EVALUAR EJE Y
+    // --- EVALUAR EJE Y ---
     if (dy != 0.0f) {
         Punto futuroY = jugador->caja.centro;
         futuroY.y += dy;
@@ -122,8 +127,13 @@ void Game::handleInput(float dt) {
         while (actualY) {
             Entity* ent = actualY->datos;
 
-            if (ent->tipo == TIPO_BOMBA && !((Bomb*)ent)->recienColocada) chocaY = true;
-            else if (ent->solido) chocaY = true;
+            // ¡LA MISMA CORRECCIÓN EN Y!
+            if (ent->tipo == TIPO_BOMBA) {
+                if (!((Bomb*)ent)->recienColocada) chocaY = true;
+            }
+            else if (ent->solido) {
+                chocaY = true;
+            }
 
             if (ent->tipo == TIPO_EXPLOSION) jugador->activo = false;
 
@@ -185,7 +195,6 @@ void Game::generarExplosion(float centroX, float centroY, int poder) {
                     }
                 }
                 else if (colision->tipo == TIPO_BOMBA) {
-                    // Reacción en cadena
                     Bomb* otraBomba = (Bomb*)colision;
                     otraBomba->tiempoRestante = 0.0f;
                 }

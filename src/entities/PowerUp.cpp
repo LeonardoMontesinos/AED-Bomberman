@@ -11,7 +11,6 @@ void PowerUp::draw() {
         DrawRectangle((int)(caja.centro.x - caja.medio),
                       (int)(caja.centro.y - caja.medio),
                       (int)(caja.medio * 2), (int)(caja.medio * 2), color);
-
         int posX = (int)caja.centro.x - 6;
         int posY = (int)caja.centro.y - 10;
 
