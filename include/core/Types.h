@@ -1,7 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-// Identificadores para saber qué hay dentro del Quadtree
 enum TipoEntidad {
     TIPO_JUGADOR,
     TIPO_ENEMIGO,
@@ -12,11 +11,10 @@ enum TipoEntidad {
     TIPO_POWERUP
 };
 
-// Tipos de mejoras clásicas de NES
 enum TipoPowerUp {
-    PWR_FUEGO,      // Aumenta el rango de explosión
-    PWR_BOMBA,      // Permite poner más bombas simultáneas
-    PWR_VELOCIDAD   // Aumenta la velocidad de movimiento
+    PWR_FUEGO,
+    PWR_BOMBA,
+    PWR_VELOCIDAD
 };
 
 struct Punto { float x, y; };

@@ -9,7 +9,7 @@ public:
     float tiempoRestante;
     int poderFuego;
     Player* propietario;
-    bool recienColocada; // NUEVO: Para saber si el jugador sigue encima
+    bool recienColocada;
 
     Bomb(float x, float y, int poder, Player* prop);
     void update(float dt) override;

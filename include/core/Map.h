@@ -11,12 +11,10 @@ public:
     Map();
     ~Map();
 
-    // Función principal que elije qué mapa cargar
     void cargarMapa(int tipo);
     void draw();
 
 private:
-    // Generadores específicos
     void generarMapaClasico();
     void generarMapaArena();
 };

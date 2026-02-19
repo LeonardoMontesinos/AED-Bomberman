@@ -9,7 +9,7 @@ public:
     AABB caja;
     Color color;
     bool solido;
-    bool activo; // Si es false, se borrará en el próximo frame
+    bool activo;
     TipoEntidad tipo;
 
     Entity(float x, float y, float medio, Color col, bool sol, TipoEntidad t) {

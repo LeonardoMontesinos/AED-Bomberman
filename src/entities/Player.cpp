@@ -9,8 +9,7 @@ Player::Player(float x, float y) : Entity(x, y, 14.0f, BLUE, true, TIPO_JUGADOR)
 }
 
 void Player::update(float dt) {
-    // Si la explosión lo tocó, su estado "activo" pasará a false en el Game.cpp
     if (!activo) {
-        color = BLACK; // Efecto visual de muerte
+        color = BLACK; //efecto muerte
     }
 }

@@ -17,12 +17,11 @@ private:
     Map* mapa;
     Quadtree<Entity>* quadtree;
 
-    // Listas independientes para manejar el ciclo de vida de los objetos
     ListaEnlazada<Bomb*> bombas;
     ListaEnlazada<Explosion*> explosiones;
     ListaEnlazada<PowerUp*> powerups;
 
-    bool gameOver; // Estado del juego para saber si perdimos
+    bool gameOver;
 
 public:
     Game(int screenWidth, int screenHeight);
@@ -34,10 +33,8 @@ private:
     void update(float dt);
     void render();
 
-    // Función que instanciará objetos Explosion en forma de cruz al estallar una bomba
     void generarExplosion(float centroX, float centroY, int poder);
 
-    // Función vital: Recorre todas las listas y hace 'delete' de los objetos inactivos
     void limpiarEntidadesInactivas();
 };
 

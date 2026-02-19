@@ -36,17 +36,14 @@ void Map::generarMapaClasico() {
             float y = fila * TILE_SIZE + MEDIO;
 
             if (fila == 0 || fila == FILAS - 1 || col == 0 || col == COLUMNAS - 1) {
-                // AÑADIDO: TIPO_MURO_INDESTRUCTIBLE
                 muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
             }
             else if (fila % 2 == 0 && col % 2 == 0) {
-                // AÑADIDO: TIPO_MURO_INDESTRUCTIBLE
                 muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
             }
             else {
                 bool esZonaSegura = (fila <= 2 && col <= 2);
                 if (!esZonaSegura && rand() % 100 < 70) {
-                    // AÑADIDO: TIPO_MURO_DESTRUCTIBLE
                     muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
                 }
             }
@@ -66,7 +63,6 @@ void Map::generarMapaArena() {
             float y = fila * TILE_SIZE + MEDIO;
 
             if (fila == 0 || fila == FILAS - 1 || col == 0 || col == COLUMNAS - 1) {
-                // AÑADIDO: TIPO_MURO_INDESTRUCTIBLE
                 muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
                 continue;
             }
@@ -75,13 +71,11 @@ void Map::generarMapaArena() {
 
             if (esCentro) {
                 if (rand() % 100 < 30) {
-                    // AÑADIDO: TIPO_MURO_DESTRUCTIBLE
                     muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
                 }
             }
             else {
                 if (fila % 3 == 0 && col % 3 == 0) {
-                    // AÑADIDO: TIPO_MURO_INDESTRUCTIBLE
                     muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
                 } else {
                     bool esZonaSegura = (fila <= 2 && col <= 2);

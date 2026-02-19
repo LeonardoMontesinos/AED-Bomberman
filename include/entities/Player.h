@@ -3,7 +3,6 @@
 
 #include "Entity.h"
 
-// NUEVO: Enumerador para la dirección
 enum Direccion { ARRIBA, ABAJO, IZQUIERDA, DERECHA };
 
 class Player : public Entity {

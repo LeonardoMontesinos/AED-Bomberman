@@ -7,6 +7,6 @@ Explosion::Explosion(float x, float y) : Entity(x, y, 20.0f, ORANGE, false, TIPO
 void Explosion::update(float dt) {
     tiempoRestante -= dt;
     if (tiempoRestante <= 0.0f) {
-        activo = false; // El fuego se apaga
+        activo = false;
     }
 }

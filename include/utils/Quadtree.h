@@ -34,9 +34,7 @@ public:
         dividido = true;
     }
 
-    // CAMBIO CRUCIAL 1: Pasamos el objeto entero y evaluamos la INTERSECCIÓN de su caja
     bool insertar(T* data) {
-        // Si la caja del objeto no toca este cuadrante, lo ignoramos
         if (!limite.intersecta(data->caja)) return false;
 
         int contador = 0;
@@ -51,7 +49,6 @@ public:
 
         if (!dividido) subdividir();
 
-        // CAMBIO CRUCIAL 2: Un objeto grande puede estar en la frontera de varios cuadrantes a la vez.
         // Intentamos insertarlo en todos los que toque.
         bool insertado = false;
         if (noroeste->insertar(data)) insertado = true;
@@ -68,7 +65,6 @@ public:
 
         Nodo* actual = objetos;
         while (actual != nullptr) {
-            // CAMBIO CRUCIAL 3: Verificamos si las CAJAS se intersectan (Hitbox vs Hitbox)
             if (rango.intersecta(actual->datos->caja)) {
                 Nodo* resultado = new Nodo{actual->datos, *listaResultados};
                 *listaResultados = resultado;
