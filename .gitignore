@@ -1,0 +1,40 @@
+# ===== Build folders (CMake/CLion) =====
+build/
+cmake-build-*/
+out/
+bin/
+dist/
+
+# CMake generated files (if generated in-source, just in case)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+*.cmake.user
+
+# ===== Compiled objects / libraries =====
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+
+# ===== IDEs / Editors =====
+.idea/
+.vscode/
+*.code-workspace
+
+# ===== OS / misc =====
+.DS_Store
+Thumbs.db
+*.log
+
+# ===== Sanitizers / coverage =====
+*.gcda
+*.gcno
+*.gcov
+coverage/
