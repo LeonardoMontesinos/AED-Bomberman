@@ -36,27 +36,50 @@ public:
     }
 
     bool insertar(T* data) {
+        // 1. Si ni siquiera toca este cuadrante, lo ignoramos
         if (!limite.intersecta(data->caja)) return false;
 
-        int contador = 0;
-        Nodo* temp = objetos;
-        while (temp != nullptr) { contador++; temp = temp->siguiente; }
+        // 2. Si ya estamos divididos, intentamos pasarlo a los hijos
+        if (dividido) {
+            // SOLO lo pasamos si cabe COMPLETAMENTE dentro del hijo
+            if (noroeste->limite.contiene(data->caja)) return noroeste->insertar(data);
+            if (noreste->limite.contiene(data->caja)) return noreste->insertar(data);
+            if (suroeste->limite.contiene(data->caja)) return suroeste->insertar(data);
+            if (sureste->limite.contiene(data->caja)) return sureste->insertar(data);
 
-        if (contador < capacidad && !dividido) {
+            // Si el objeto está justo en la línea divisoria (no cabe 100% en ningún hijo),
+            // ignoramos el límite de capacidad y lo guardamos aquí en el padre.
             Nodo* nuevo = new Nodo{data, objetos};
             objetos = nuevo;
             return true;
         }
 
-        if (!dividido) subdividir();
+        // 3. Contamos cuántos objetos hay actualmente en este nodo
+        int contador = 0;
+        Nodo* temp = objetos;
+        while (temp != nullptr) { contador++; temp = temp->siguiente; }
 
-        bool insertado = false;
-        if (noroeste->insertar(data)) insertado = true;
-        if (noreste->insertar(data)) insertado = true;
-        if (suroeste->insertar(data)) insertado = true;
-        if (sureste->insertar(data)) insertado = true;
+        // 4. Si hay espacio, lo guardamos
+        if (contador < capacidad) {
+            Nodo* nuevo = new Nodo{data, objetos};
+            objetos = nuevo;
+            return true;
+        }
 
-        return insertado;
+        // 5. Si está lleno, subdividimos la zona
+        subdividir();
+
+        // 6. Ahora que nos dividimos, intentamos meter el objeto nuevo en los hijos
+        if (noroeste->limite.contiene(data->caja)) return noroeste->insertar(data);
+        if (noreste->limite.contiene(data->caja)) return noreste->insertar(data);
+        if (suroeste->limite.contiene(data->caja)) return suroeste->insertar(data);
+        if (sureste->limite.contiene(data->caja)) return sureste->insertar(data);
+
+        // Si llegó hasta aquí, significa que el objeto cruza la línea roja central.
+        // Como no cabe entero en ningún hijo, se queda a vivir en este cuadrante padre.
+        Nodo* nuevo = new Nodo{data, objetos};
+        objetos = nuevo;
+        return true;
     }
 
     void consultar(AABB rango, Nodo** listaResultados) {

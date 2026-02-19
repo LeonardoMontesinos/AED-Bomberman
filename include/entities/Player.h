@@ -3,8 +3,6 @@
 
 #include "Entity.h"
 
-enum Direccion { ARRIBA, ABAJO, IZQUIERDA, DERECHA };
-
 class Player : public Entity {
 public:
     float velocidad;
