@@ -26,6 +26,7 @@ private:
 
     int totalEntidades;
     int colisionesComprobadas;
+    int entidadesCercanas;
 
 public:
     Game(int screenWidth, int screenHeight);

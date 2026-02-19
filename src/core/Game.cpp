@@ -217,7 +217,20 @@ void Game::update(float dt) {
 
     limpiarEntidadesInactivas();
 
-    totalEntidades = contarLista(mapa->muros) + contarLista(bombas) + contarLista(explosiones) + contarLista(powerups) + 1; // +1 del Jugador
+    totalEntidades = contarLista(mapa->muros) + contarLista(bombas) + contarLista(explosiones) + contarLista(powerups) + 1;
+
+    AABB areaVision = {{jugador->caja.centro.x, jugador->caja.centro.y}, width / 2.0f};
+    Quadtree<Entity>::Nodo* objetosCercanos = nullptr;
+    quadtree->consultar(areaVision, &objetosCercanos);
+
+    entidadesCercanas = 0;
+    auto actual = objetosCercanos;
+    while(actual) {
+        entidadesCercanas++;
+        auto aBorrar = actual;
+        actual = actual->siguiente;
+        delete aBorrar;
+    }
 }
 
 void Game::limpiarEntidadesInactivas() {
@@ -245,18 +258,18 @@ void Game::render() {
 
 
     int hudX = width - 230;
-    DrawRectangle(hudX, 10, 220, 140, Fade(BLACK, 0.7f));
-    DrawRectangleLines(hudX, 10, 220, 140, LIGHTGRAY); // Un borde bonito
+    DrawRectangle(hudX, 10, 220, 155, Fade(BLACK, 0.7f)); // Aumenté un poco el alto a 155
+    DrawRectangleLines(hudX, 10, 220, 155, LIGHTGRAY);
 
     DrawText("RENDIMIENTO QUADTREE", hudX + 10, 20, 10, GREEN);
-    DrawText(TextFormat("Total Entidades: %d", totalEntidades), hudX + 10, 35, 10, WHITE);
-    DrawText(TextFormat("Comprobaciones: %d", colisionesComprobadas), hudX + 10, 50, 10, RED);
+    DrawText(TextFormat("Total entidades: %d", totalEntidades), hudX + 10, 35, 10, DARKGRAY);
+    DrawText(TextFormat("Entidades cargadas: %d", entidadesCercanas), hudX + 10, 50, 10, GREEN); // <-- LA NUEVA MÉTRICA
+    DrawText(TextFormat("Comprobaciones: %d", colisionesComprobadas), hudX + 10, 65, 10, RED);
 
-    DrawText("ESTADISTICAS JUGADOR", hudX + 10, 80, 10, YELLOW);
-    DrawText(TextFormat("Bombas Max: %d", jugador->maxBombas), hudX + 10, 95, 10, WHITE);
-    DrawText(TextFormat("Fuego Rango: %d", jugador->poderFuego), hudX + 10, 110, 10, WHITE);
-    DrawText(TextFormat("Velocidad: %d", (int)jugador->velocidad), hudX + 10, 125, 10, WHITE);
-
+    DrawText("ESTADISTICAS JUGADOR", hudX + 10, 95, 10, YELLOW);
+    DrawText(TextFormat("Bombas Max: %d", jugador->maxBombas), hudX + 10, 110, 10, WHITE);
+    DrawText(TextFormat("Rango Explosion: %d", jugador->poderFuego), hudX + 10, 125, 10, WHITE);
+    DrawText(TextFormat("Velocidad: %d", (int)jugador->velocidad), hudX + 10, 140, 10, WHITE);
     if (gameOver) {
         DrawRectangle(0, height/2 - 60, width, 120, Fade(BLACK, 0.8f));
         DrawText("GAME OVER", width/2 - 110, height/2 - 20, 40, RED);
