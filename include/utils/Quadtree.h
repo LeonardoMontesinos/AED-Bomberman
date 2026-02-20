@@ -89,6 +89,16 @@ public:
             dividido = false;
         }
     }
+
+    void drawDebug() {
+        DrawRectangleLines(limite.centro.x - limite.medio, limite.centro.y - limite.medio, limite.medio * 2, limite.medio * 2, RED);
+        if (dividido) {
+            noroeste->drawDebug();
+            noreste->drawDebug();
+            suroeste->drawDebug();
+            sureste->drawDebug();
+        }
+    }
 };
 
 #endif // QUADTREE_H

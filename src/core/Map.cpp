@@ -42,7 +42,7 @@ void Map::generarMapaClasico() {
                 muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
             }
             else {
-                bool esZonaSegura = (fila <= 2 && col <= 2);
+                bool esZonaSegura = (fila <= 2 && col <= 2) || (fila >= FILAS - 3 && col >= COLUMNAS - 3);
                 if (!esZonaSegura && rand() % 100 < 70) {
                     muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
                 }
