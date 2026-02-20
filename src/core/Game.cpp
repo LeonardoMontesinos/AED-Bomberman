@@ -419,7 +419,7 @@ void Game::render() {
 
             if (estadoActual == PVP) {
                 if (ganador == 1) DrawText("¡JUGADOR 1 GANA!", width/2 - 180, height/2 - 50, 40, GREEN);
-                else if (ganador == 2) DrawText("¡JUGADOR 2 GANA!", width/2 - 180w, height/2 - 50, 40, BLUE);
+                else if (ganador == 2) DrawText("¡JUGADOR 2 GANA!", width/2 - 180, height/2 - 50, 40, BLUE);
                 else DrawText("¡EMPATE!", width/2 - 90, height/2 - 50, 40, YELLOW);
             } else {
                 DrawText("DERROTA...", width/2 - 110, height/2 - 50, 40, RED);
