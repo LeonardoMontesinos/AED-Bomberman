@@ -1,22 +1,28 @@
 #include "core/Map.h"
 #include <stdlib.h>
 
+static const float TILE_SIZE = 40.0f;
+static const float MEDIO     = TILE_SIZE / 2.0f;
+static const int   COLUMNAS  = 800 / (int)TILE_SIZE;   // 20
+static const int   FILAS     = 600 / (int)TILE_SIZE;   // 15
+
 Map::Map() {}
 
 Map::~Map() {
     auto actual = muros.cabeza;
-    while (actual != nullptr) {
+    while (actual) {
         delete actual->dato;
         actual = actual->siguiente;
     }
 }
 
+void Map::insertarMuro(float x, float y, float medio, bool destructible) {
+    muros.insertar(new WallEntity(x, y, medio, destructible, texTiles));
+}
+
 void Map::cargarMapa(int tipo) {
     auto actual = muros.cabeza;
-    while (actual != nullptr) {
-        delete actual->dato;
-        actual = actual->siguiente;
-    }
+    while (actual) { delete actual->dato; actual = actual->siguiente; }
     muros.limpiar();
 
     if (tipo == 1) generarMapaClasico();
@@ -25,88 +31,83 @@ void Map::cargarMapa(int tipo) {
 }
 
 void Map::generarMapaClasico() {
-    float TILE_SIZE = 40.0f;
-    float MEDIO = TILE_SIZE / 2.0f;
-    int COLUMNAS = 800 / (int)TILE_SIZE;
-    int FILAS = 600 / (int)TILE_SIZE;
-
     for (int fila = 0; fila < FILAS; fila++) {
         for (int col = 0; col < COLUMNAS; col++) {
             float x = col * TILE_SIZE + MEDIO;
             float y = fila * TILE_SIZE + MEDIO;
 
-            // 1. Bordes del mapa (Muros Indestructibles)
-            if (fila == 0 || fila == FILAS - 1 || col == 0 || col == COLUMNAS - 1) {
-                muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
+            if (fila == 0 || fila == FILAS-1 || col == 0 || col == COLUMNAS-1) {
+                insertarMuro(x, y, MEDIO, false);
                 continue;
             }
 
-            // 2. Definir las zonas seguras (Forma de "L" vacía de 3 casillas)
-            // Esquina superior izquierda (Jugador 1)
-            bool zonaSeguraJ1 = (fila == 1 && col == 1) || (fila == 1 && col == 2) || (fila == 2 && col == 1);
-            // Esquina inferior derecha (Jugador 2 / Bot)
-            bool zonaSeguraJ2 = (fila == FILAS - 2 && col == COLUMNAS - 2) || (fila == FILAS - 2 && col == COLUMNAS - 3) || (fila == FILAS - 3 && col == COLUMNAS - 2);
+            bool zonaJ1 = (fila==1 && col==1) || (fila==1 && col==2) || (fila==2 && col==1);
+            bool zonaJ2 = (fila==FILAS-2 && col==COLUMNAS-2) ||
+                          (fila==FILAS-2 && col==COLUMNAS-3) ||
+                          (fila==FILAS-3 && col==COLUMNAS-2);
+            if (zonaJ1 || zonaJ2) continue;
 
-            if (zonaSeguraJ1 || zonaSeguraJ2) {
-                continue; // No poner NINGÚN muro en estas coordenadas
-            }
-
-            // 3. Cuadrícula interna (Muros Indestructibles en posiciones impares)
             if (fila % 2 == 0 && col % 2 == 0) {
-                muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
+                insertarMuro(x, y, MEDIO, false);
                 continue;
             }
 
-            // 4. Rellenar el resto con Muros Destructibles (Aleatorio)
             if (rand() % 100 < 75) {
-                muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
+                insertarMuro(x, y, MEDIO, true);
             }
         }
     }
 }
 
 void Map::generarMapaArena() {
-    float TILE_SIZE = 40.0f;
-    float MEDIO = TILE_SIZE / 2.0f;
-    int COLUMNAS = 800 / (int)TILE_SIZE;
-    int FILAS = 600 / (int)TILE_SIZE;
-
     for (int fila = 0; fila < FILAS; fila++) {
         for (int col = 0; col < COLUMNAS; col++) {
             float x = col * TILE_SIZE + MEDIO;
             float y = fila * TILE_SIZE + MEDIO;
 
-            if (fila == 0 || fila == FILAS - 1 || col == 0 || col == COLUMNAS - 1) {
-                muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
+            if (fila == 0 || fila == FILAS-1 || col == 0 || col == COLUMNAS-1) {
+                insertarMuro(x, y, MEDIO, false);
                 continue;
             }
 
-            bool esCentro = (fila >= 4 && fila <= FILAS - 5) && (col >= 5 && col <= COLUMNAS - 6);
+            bool esCentro = (fila >= 4 && fila <= FILAS-5) &&
+                            (col >= 5 && col <= COLUMNAS-6);
 
             if (esCentro) {
-                if (rand() % 100 < 30) {
-                    muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
-                }
-            }
-            else {
+                if (rand() % 100 < 30)
+                    insertarMuro(x, y, MEDIO, true);
+            } else {
                 if (fila % 3 == 0 && col % 3 == 0) {
-                    muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
+                    insertarMuro(x, y, MEDIO, false);
                 } else {
                     bool esZonaSegura = (fila <= 2 && col <= 2);
-                    if (!esZonaSegura && rand() % 100 < 85) {
-                        // AÑADIDO: TIPO_MURO_DESTRUCTIBLE
-                        muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
-                    }
+                    if (!esZonaSegura && rand() % 100 < 85)
+                        insertarMuro(x, y, MEDIO, true);
                 }
             }
         }
     }
 }
 
+void Map::update(float dt) {
+    auto actual = muros.cabeza;
+    while (actual) {
+        WallEntity* w = static_cast<WallEntity*>(actual->dato);
+        if (w->destruyendo) {
+            bool terminado = w->updateDestroy(dt);
+            if (terminado) w->activo = false;
+        }
+        actual = actual->siguiente;
+    }
+}
+
 void Map::draw() {
     auto actual = muros.cabeza;
-    while (actual != nullptr) {
-        actual->dato->draw();
+    while (actual) {
+        if (actual->dato->activo) {
+            WallEntity* w = static_cast<WallEntity*>(actual->dato);
+            w->drawSprite(texTiles);
+        }
         actual = actual->siguiente;
     }
 }
