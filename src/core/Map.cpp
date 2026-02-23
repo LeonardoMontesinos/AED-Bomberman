@@ -35,17 +35,31 @@ void Map::generarMapaClasico() {
             float x = col * TILE_SIZE + MEDIO;
             float y = fila * TILE_SIZE + MEDIO;
 
+            // 1. Bordes del mapa (Muros Indestructibles)
             if (fila == 0 || fila == FILAS - 1 || col == 0 || col == COLUMNAS - 1) {
                 muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
+                continue;
             }
-            else if (fila % 2 == 0 && col % 2 == 0) {
+
+            // 2. Definir las zonas seguras (Forma de "L" vacía de 3 casillas)
+            // Esquina superior izquierda (Jugador 1)
+            bool zonaSeguraJ1 = (fila == 1 && col == 1) || (fila == 1 && col == 2) || (fila == 2 && col == 1);
+            // Esquina inferior derecha (Jugador 2 / Bot)
+            bool zonaSeguraJ2 = (fila == FILAS - 2 && col == COLUMNAS - 2) || (fila == FILAS - 2 && col == COLUMNAS - 3) || (fila == FILAS - 3 && col == COLUMNAS - 2);
+
+            if (zonaSeguraJ1 || zonaSeguraJ2) {
+                continue; // No poner NINGÚN muro en estas coordenadas
+            }
+
+            // 3. Cuadrícula interna (Muros Indestructibles en posiciones impares)
+            if (fila % 2 == 0 && col % 2 == 0) {
                 muros.insertar(new Entity(x, y, MEDIO, DARKGRAY, true, TIPO_MURO_INDESTRUCTIBLE));
+                continue;
             }
-            else {
-                bool esZonaSegura = (fila <= 2 && col <= 2);
-                if (!esZonaSegura && rand() % 100 < 70) {
-                    muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
-                }
+
+            // 4. Rellenar el resto con Muros Destructibles (Aleatorio)
+            if (rand() % 100 < 75) {
+                muros.insertar(new Entity(x, y, MEDIO, BROWN, true, TIPO_MURO_DESTRUCTIBLE));
             }
         }
     }

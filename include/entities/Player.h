@@ -12,7 +12,8 @@ public:
     int bombasActivas;
     int poderFuego;
     Direccion mirando;
-
+    float timerFuego = 0.0f;
+    float timerVelocidad = 0.0f;
     Player(float x, float y);
     void update(float dt) override;
 };
