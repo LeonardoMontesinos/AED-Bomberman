@@ -1,12 +1,11 @@
 #include "core/Game.h"
 #include <stdlib.h>
-#include <functional>
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
 #endif
 
-//Emscripten
+// Emscripten
 static Game* instanciaGlobal = nullptr;
 
 static void BucleWeb() {
@@ -72,14 +71,14 @@ Game::Game(int screenWidth, int screenHeight) {
     mapa->cargarMapa(1);
 
     jugador = new Player(60.0f, 60.0f);
-    jugador->setTexture(texBomberman, 1);   // blanco → offset=0
+    jugador->setTexture(texBomberman, 1);
 
     jugador2 = new Player(width - 60.0f, height - 60.0f);
-    jugador2->setTexture(texBomberman, 2);  // negro  → offset=103
+    jugador2->setTexture(texBomberman, 2);
     jugador2->activo = false;
 
     bot = new Player(width - 60.0f, height - 60.0f);
-    bot->setTexture(texBomberman, 2);       // blanco también
+    bot->setTexture(texBomberman, 2);
     bot->activo = false;
     bot->velocidad = 120.0f;
 }
@@ -116,7 +115,7 @@ void Game::handleInput(float dt) {
     float dx1 = 0.0f, dy1 = 0.0f;
     float dx2 = 0.0f, dy2 = 0.0f;
 
-	//P1
+    // P1
     if (jugador->activo && jugador->isAlive) {
         float vel = jugador->velocidad * dt;
         bool mX = false, mY = false;
@@ -138,7 +137,7 @@ void Game::handleInput(float dt) {
         }
     }
 
-    // p2
+    // P2
     if (estadoActual == PVP && jugador2->activo && jugador2->isAlive) {
         float vel2 = jugador2->velocidad * dt;
         bool mX2 = false, mY2 = false;
@@ -160,7 +159,7 @@ void Game::handleInput(float dt) {
         }
     }
 
-    // quadtree
+    // Quadtree
     if (quadtree) delete quadtree;
     quadtree = new Quadtree<Entity>(AABB{{width/2.0f, height/2.0f}, width/2.0f}, 4);
     auto m = mapa->muros.cabeza;
@@ -175,7 +174,7 @@ void Game::handleInput(float dt) {
     moverYColisionar(jugador, dx1, dy1);
     if (estadoActual == PVP) moverYColisionar(jugador2, dx2, dy2);
 
-    //bot
+    // Bot
     if (estadoActual == PVE && bot->activo) {
         float dxBot = 0.0f, dyBot = 0.0f;
         bool botPoneBomba = false;
@@ -381,7 +380,6 @@ void Game::render() {
         DrawText("Presiona ESC o ENTER para volver",width/2-180,height-50,20,WHITE);
     }
 
-    // Juego
     else if (estadoActual == PVP || estadoActual == PVE) {
 
         DrawTexturePro(texArena,
@@ -479,7 +477,7 @@ void Game::aplicarPowerUp(Player* jug, Entity* ent) {
     PowerUp* pwr = (PowerUp*)ent;
     PlaySound(fxPickUp);
     if      (pwr->tipoPoder == PWR_BOMBA)     { jug->maxBombas++; }
-    else if (pwr->tipoPoder == PWR_FUEGO)     { jug->poderFuego++;    jug->timerFuego     = 6000.0f; }
+    else if (pwr->tipoPoder == PWR_FUEGO)     { jug->poderFuego++;     jug->timerFuego     = 6000.0f; }
     else if (pwr->tipoPoder == PWR_VELOCIDAD) { jug->velocidad+=15.0f; jug->timerVelocidad = 6000.0f; }
 }
 
@@ -499,17 +497,13 @@ void Game::moverYColisionar(Player* p, float dx, float dy) {
 
             if (std::abs(px - bx) < margen) {
                 float fuegoArriba = by - (bomb->uRadius * TILE) - (TILE/2.0f);
-                float fuegoAbajo = by + (bomb->dRadius * TILE) + (TILE/2.0f);
-                if (py >= fuegoArriba && py <= fuegoAbajo) {
-                    p->die();
-                }
+                float fuegoAbajo  = by + (bomb->dRadius * TILE) + (TILE/2.0f);
+                if (py >= fuegoArriba && py <= fuegoAbajo) p->die();
             }
             else if (std::abs(py - by) < margen) {
                 float fuegoIzquierda = bx - (bomb->lRadius * TILE) - (TILE/2.0f);
-                float fuegoDerecha = bx + (bomb->rRadius * TILE) + (TILE/2.0f);
-                if (px >= fuegoIzquierda && px <= fuegoDerecha) {
-                    p->die();
-                }
+                float fuegoDerecha   = bx + (bomb->rRadius * TILE) + (TILE/2.0f);
+                if (px >= fuegoIzquierda && px <= fuegoDerecha) p->die();
             }
         }
         bCheck = bCheck->siguiente;
@@ -523,9 +517,7 @@ void Game::moverYColisionar(Player* p, float dx, float dy) {
             Entity* ent = cur->datos;
             if (ent->tipo == TIPO_BOMBA) {
                 Bomb* laBomba = (Bomb*)ent;
-                if (!laBomba->isExploding && !laBomba->recienColocada) {
-                    choca = true;
-                }
+                if (!laBomba->isExploding && !laBomba->recienColocada) choca = true;
             } else if (ent->solido) {
                 choca = true;
             }
@@ -564,7 +556,6 @@ void Game::moverYColisionar(Player* p, float dx, float dy) {
     }
 }
 
-
 void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     if (!bot->activo) return;
     ponerBomba = false;
@@ -581,13 +572,17 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     if(bCol < 0) bCol = 0; if(bCol >= cols) bCol = cols - 1;
     if(bRow < 0) bRow = 0; if(bRow >= rows) bRow = rows - 1;
 
-    std::vector<std::vector<int>> grid(cols, std::vector<int>(rows, 0));
+    Vector<Vector<int>> grid;
+    grid.resize(cols);
+    for (int i = 0; i < cols; i++) grid[i].resize(rows); // zero-init por new T[n]()
 
     auto m = mapa->muros.cabeza;
     while(m) {
         if(m->dato->activo) {
-            int c = m->dato->caja.centro.x / TILE; int r = m->dato->caja.centro.y / TILE;
-            if(c>=0 && c<cols && r>=0 && r<rows) grid[c][r] = (m->dato->tipo == TIPO_MURO_INDESTRUCTIBLE) ? 1 : 2;
+            int c = m->dato->caja.centro.x / TILE;
+            int r = m->dato->caja.centro.y / TILE;
+            if(c>=0 && c<cols && r>=0 && r<rows)
+                grid[c][r] = (m->dato->tipo == TIPO_MURO_INDESTRUCTIBLE) ? 1 : 2;
         }
         m = m->siguiente;
     }
@@ -595,7 +590,8 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     auto p = powerups.cabeza;
     while(p) {
         if(p->dato->activo) {
-            int c = p->dato->caja.centro.x / TILE; int r = p->dato->caja.centro.y / TILE;
+            int c = p->dato->caja.centro.x / TILE;
+            int r = p->dato->caja.centro.y / TILE;
             if(c>=0 && c<cols && r>=0 && r<rows) grid[c][r] = 5;
         }
         p = p->siguiente;
@@ -604,10 +600,11 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     auto b = bombas.cabeza;
     while(b) {
         if(b->dato->activo) {
-            int c = b->dato->caja.centro.x / TILE; int r = b->dato->caja.centro.y / TILE;
+            int c = b->dato->caja.centro.x / TILE;
+            int r = b->dato->caja.centro.y / TILE;
             if(c>=0 && c<cols && r>=0 && r<rows) {
                 grid[c][r] = 3;
-                int rango = ((Bomb*)b->dato)->poderFuego; // <-- SOLUCIÓN
+                int rango = ((Bomb*)b->dato)->poderFuego;
                 auto proyectar = [&](int dc, int dr) {
                     for(int i=1; i<=rango; i++) {
                         int nc = c + dc*i; int nr = r + dr*i;
@@ -616,7 +613,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                         grid[nc][nr] = 4;
                     }
                 };
-                proyectar(0, -1); proyectar(0, 1); proyectar(-1, 0); proyectar(1, 0);
+                proyectar(0,-1); proyectar(0,1); proyectar(-1,0); proyectar(1,0);
             }
         }
         b = b->siguiente;
@@ -625,35 +622,52 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     auto e = explosiones.cabeza;
     while(e) {
         if(e->dato->activo) {
-            int c = e->dato->caja.centro.x / TILE; int r = e->dato->caja.centro.y / TILE;
+            int c = e->dato->caja.centro.x / TILE;
+            int r = e->dato->caja.centro.y / TILE;
             if(c>=0 && c<cols && r>=0 && r<rows) grid[c][r] = 4;
         }
         e = e->siguiente;
     }
 
     if (grid[bCol][bRow] == 3) grid[bCol][bRow] = 4;
-    auto buscarRuta = [&](std::function<bool(int, int)> esMeta, bool ignorarPeligro) -> std::pair<int, int> {
-        std::queue<std::pair<int, int>> cola;
-        std::vector<std::vector<std::pair<int, int>>> padre(cols, std::vector<std::pair<int, int>>(rows, {-1, -1}));
-        std::vector<std::vector<bool>> visitado(cols, std::vector<bool>(rows, false));
 
-        cola.push({bCol, bRow}); visitado[bCol][bRow] = true;
+    // bfs
+    auto buscarRuta = [&](auto esMeta, bool ignorarPeligro) -> std::pair<int,int> {
+        Queue<std::pair<int,int>> cola;
+
+        Vector<Vector<std::pair<int,int>>> padre;
+        padre.resize(cols);
+        for (int i = 0; i < cols; i++) {
+            padre[i].resize(rows);
+            for (int j = 0; j < rows; j++) padre[i][j] = {-1, -1};
+        }
+
+        Vector<Vector<bool>> visitado;
+        visitado.resize(cols);
+        for (int i = 0; i < cols; i++) visitado[i].resize(rows); /
+
+        cola.push({bCol, bRow});
+        visitado[bCol][bRow] = true;
+
         int destC = -1, destR = -1;
-        int dirs[4][2] = {{0,-1}, {0,1}, {-1,0}, {1,0}};
+        int dirs[4][2] = {{0,-1},{0,1},{-1,0},{1,0}};
 
-        while(!cola.empty()) {
+        while (!cola.empty()) {
             auto curr = cola.front(); cola.pop();
-            int cc = curr.first; int cr = curr.second;
+            int cc = curr.first, cr = curr.second;
 
             if (esMeta(cc, cr)) { destC = cc; destR = cr; break; }
 
-            for(int i=0; i<4; i++) {
-                int nc = cc + dirs[i][0]; int nr = cr + dirs[i][1];
-                if(nc>=0 && nc<cols && nr>=0 && nr<rows) {
-                    bool puedePasar = ignorarPeligro ? (grid[nc][nr] == 0 || grid[nc][nr] == 4 || grid[nc][nr] == 5)
-                                                     : (grid[nc][nr] == 0 || grid[nc][nr] == 5);
-                    if(!visitado[nc][nr] && puedePasar) {
-                        visitado[nc][nr] = true; padre[nc][nr] = {cc, cr}; cola.push({nc, nr});
+            for (int i = 0; i < 4; i++) {
+                int nc = cc + dirs[i][0], nr = cr + dirs[i][1];
+                if (nc>=0 && nc<cols && nr>=0 && nr<rows) {
+                    bool puedePasar = ignorarPeligro
+                        ? (grid[nc][nr]==0 || grid[nc][nr]==4 || grid[nc][nr]==5)
+                        : (grid[nc][nr]==0 || grid[nc][nr]==5);
+                    if (!visitado[nc][nr] && puedePasar) {
+                        visitado[nc][nr] = true;
+                        padre[nc][nr] = {cc, cr};
+                        cola.push({nc, nr});
                     }
                 }
             }
@@ -663,43 +677,56 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         if (destC == bCol && destR == bRow) return {bCol, bRow};
 
         int cC = destC, cR = destR;
-        while(padre[cC][cR].first != bCol || padre[cC][cR].second != bRow) {
-            auto p = padre[cC][cR]; cC = p.first; cR = p.second;
-            if (cC == -1 || cR == -1) break;
+        while (padre[cC][cR].first != bCol || padre[cC][cR].second != bRow) {
+            auto pr = padre[cC][cR];
+            cC = pr.first; cR = pr.second;
+            if (cC == -1) break;
         }
         return {cC, cR};
     };
 
     auto simularEscape = [&](int c, int r, int poder) -> bool {
-        auto gridCopia = grid;
+        Vector<Vector<int>> gridCopia;
+        gridCopia.resize(cols);
+        for (int i = 0; i < cols; i++) {
+            gridCopia[i].resize(rows);
+            for (int j = 0; j < rows; j++) gridCopia[i][j] = grid[i][j];
+        }
+
         gridCopia[c][r] = 3;
         auto proyectar = [&](int dc, int dr) {
-            for(int i=1; i<=poder; i++) {
-                int nc = c + dc*i; int nr = r + dr*i;
-                if(nc<0 || nc>=cols || nr<0 || nr>=rows) break;
-                if(gridCopia[nc][nr] == 1 || gridCopia[nc][nr] == 2) break;
+            for (int i = 1; i <= poder; i++) {
+                int nc = c + dc*i, nr = r + dr*i;
+                if (nc<0 || nc>=cols || nr<0 || nr>=rows) break;
+                if (gridCopia[nc][nr]==1 || gridCopia[nc][nr]==2) break;
                 gridCopia[nc][nr] = 4;
             }
         };
-        proyectar(0, -1); proyectar(0, 1); proyectar(-1, 0); proyectar(1, 0);
+        proyectar(0,-1); proyectar(0,1); proyectar(-1,0); proyectar(1,0);
         gridCopia[c][r] = 4;
 
-        std::queue<std::pair<int, int>> cola;
-        std::vector<std::vector<bool>> visitado(cols, std::vector<bool>(rows, false));
-        cola.push({c, r}); visitado[c][r] = true;
-        int dirs[4][2] = {{0,-1}, {0,1}, {-1,0}, {1,0}};
+        Queue<std::pair<int,int>> cola;
+        Vector<Vector<bool>> visitado;
+        visitado.resize(cols);
+        for (int i = 0; i < cols; i++) visitado[i].resize(rows);
 
-        while(!cola.empty()) {
+        cola.push({c, r});
+        visitado[c][r] = true;
+        int dirs[4][2] = {{0,-1},{0,1},{-1,0},{1,0}};
+
+        while (!cola.empty()) {
             auto curr = cola.front(); cola.pop();
-            int cc = curr.first; int cr = curr.second;
+            int cc = curr.first, cr = curr.second;
 
-            if (gridCopia[cc][cr] == 0 || gridCopia[cc][cr] == 5) return true;
+            if (gridCopia[cc][cr]==0 || gridCopia[cc][cr]==5) return true;
 
-            for(int i=0; i<4; i++) {
-                int nc = cc + dirs[i][0]; int nr = cr + dirs[i][1];
-                if(nc>=0 && nc<cols && nr>=0 && nr<rows) {
-                    if(!visitado[nc][nr] && (gridCopia[nc][nr] == 0 || gridCopia[nc][nr] == 4 || gridCopia[nc][nr] == 5)) {
-                        visitado[nc][nr] = true; cola.push({nc, nr});
+            for (int i = 0; i < 4; i++) {
+                int nc = cc + dirs[i][0], nr = cr + dirs[i][1];
+                if (nc>=0 && nc<cols && nr>=0 && nr<rows) {
+                    if (!visitado[nc][nr] &&
+                        (gridCopia[nc][nr]==0 || gridCopia[nc][nr]==4 || gridCopia[nc][nr]==5)) {
+                        visitado[nc][nr] = true;
+                        cola.push({nc, nr});
                     }
                 }
             }
@@ -712,64 +739,72 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     bool esperando = false;
 
     if (enPeligro) {
-        auto escape = buscarRuta([&](int c, int r) { return grid[c][r] == 0 || grid[c][r] == 5; }, true);
+        auto escape = buscarRuta([&](int c, int r){ return grid[c][r]==0 || grid[c][r]==5; }, true);
         if (escape.first != -1) { sigC = escape.first; sigR = escape.second; }
     }
     else {
         bool fuegoCerca = false;
-        int dirs[4][2] = {{0,-1}, {0,1}, {-1,0}, {1,0}};
-        for(int i=0; i<4; i++) {
-            int nc = bCol + dirs[i][0]; int nr = bRow + dirs[i][1];
-            if(nc>=0 && nc<cols && nr>=0 && nr<rows && grid[nc][nr] == 4) fuegoCerca = true;
+        int dirs[4][2] = {{0,-1},{0,1},{-1,0},{1,0}};
+        for (int i = 0; i < 4; i++) {
+            int nc = bCol+dirs[i][0], nr = bRow+dirs[i][1];
+            if (nc>=0 && nc<cols && nr>=0 && nr<rows && grid[nc][nr]==4) fuegoCerca = true;
         }
 
-        if (fuegoCerca) esperando = true;
-        else {
+        if (fuegoCerca) {
+            esperando = true;
+        } else {
             int jCol = (int)(jugador->caja.centro.x / TILE);
             int jRow = (int)(jugador->caja.centro.y / TILE);
 
             if (bot->bombasActivas == 0) {
-                bool atrapaJugador = false;
-                bool rompeMuro = false;
+                bool atrapaJugador = false, rompeMuro = false;
 
-                if (bCol == jCol && abs(bRow - jRow) <= bot->poderFuego) {
+                if (bCol==jCol && abs(bRow-jRow) <= bot->poderFuego) {
                     atrapaJugador = true;
-                    int minY = std::min(bRow, jRow); int maxY = std::max(bRow, jRow);
-                    for(int y = minY + 1; y < maxY; y++) if(grid[bCol][y] == 1 || grid[bCol][y] == 2) atrapaJugador = false;
+                    int minY = std::min(bRow,jRow), maxY = std::max(bRow,jRow);
+                    for (int y=minY+1; y<maxY; y++)
+                        if (grid[bCol][y]==1 || grid[bCol][y]==2) atrapaJugador = false;
                 }
-                else if (bRow == jRow && abs(bCol - jCol) <= bot->poderFuego) {
+                else if (bRow==jRow && abs(bCol-jCol) <= bot->poderFuego) {
                     atrapaJugador = true;
-                    int minX = std::min(bCol, jCol); int maxX = std::max(bCol, jCol);
-                    for(int x = minX + 1; x < maxX; x++) if(grid[x][bRow] == 1 || grid[x][bRow] == 2) atrapaJugador = false;
+                    int minX = std::min(bCol,jCol), maxX = std::max(bCol,jCol);
+                    for (int x=minX+1; x<maxX; x++)
+                        if (grid[x][bRow]==1 || grid[x][bRow]==2) atrapaJugador = false;
                 }
 
-                for(int i=0; i<4; i++) {
-                    int nc = bCol + dirs[i][0]; int nr = bRow + dirs[i][1];
-                    if(nc>=0 && nc<cols && nr>=0 && nr<rows && grid[nc][nr] == 2) rompeMuro = true;
+                for (int i = 0; i < 4; i++) {
+                    int nc = bCol+dirs[i][0], nr = bRow+dirs[i][1];
+                    if (nc>=0 && nc<cols && nr>=0 && nr<rows && grid[nc][nr]==2) rompeMuro = true;
                 }
 
                 if (atrapaJugador || rompeMuro) {
                     if (simularEscape(bCol, bRow, bot->poderFuego)) {
                         ponerBomba = true;
-                        auto escapeInmediato = buscarRuta([&](int c, int r) { return grid[c][r] == 0 || grid[c][r] == 5; }, true);
-                        if (escapeInmediato.first != -1) { sigC = escapeInmediato.first; sigR = escapeInmediato.second; }
+                        auto escapeInmediato = buscarRuta(
+                            [&](int c, int r){ return grid[c][r]==0 || grid[c][r]==5; }, true);
+                        if (escapeInmediato.first != -1) {
+                            sigC = escapeInmediato.first;
+                            sigR = escapeInmediato.second;
+                        }
                     }
                 }
             }
 
             if (!ponerBomba && !esperando) {
-                auto irPowerUp = buscarRuta([&](int c, int r) { return grid[c][r] == 5; }, false);
+                auto irPowerUp = buscarRuta([&](int c, int r){ return grid[c][r]==5; }, false);
                 if (irPowerUp.first != -1) {
                     sigC = irPowerUp.first; sigR = irPowerUp.second;
-                }
-                else {
-                    auto irJugador = buscarRuta([&](int c, int r) { return (abs(c - jCol) + abs(r - jRow)) <= 1; }, false);
+                } else {
+                    auto irJugador = buscarRuta(
+                        [&](int c, int r){ return (abs(c-jCol)+abs(r-jRow)) <= 1; }, false);
                     if (irJugador.first != -1) {
                         sigC = irJugador.first; sigR = irJugador.second;
                     } else {
-                        auto irMuro = buscarRuta([&](int c, int r) {
-                            return (c>0 && grid[c-1][r]==2) || (c<cols-1 && grid[c+1][r]==2) ||
-                                   (r>0 && grid[c][r-1]==2) || (r<rows-1 && grid[c][r+1]==2);
+                        auto irMuro = buscarRuta([&](int c, int r){
+                            return (c>0      && grid[c-1][r]==2) ||
+                                   (c<cols-1 && grid[c+1][r]==2) ||
+                                   (r>0      && grid[c][r-1]==2) ||
+                                   (r<rows-1 && grid[c][r+1]==2);
                         }, false);
                         if (irMuro.first != -1) { sigC = irMuro.first; sigR = irMuro.second; }
                     }
@@ -781,39 +816,28 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     if (esperando) {
         float centroX = bCol * TILE + TILE / 2.0f;
         float centroY = bRow * TILE + TILE / 2.0f;
-        bot->stopAnimX();
-        bot->stopAnimY();
-        if (abs(bx - centroX) > 1.0f) {
-            dx = (centroX > bx) ? vel : -vel;
-            bot->updateAnimX(dx > 0);
-        }
-        if (abs(by - centroY) > 1.0f) {
-            dy = (centroY > by) ? vel : -vel;
-            bot->updateAnimY(dy > 0);
-        }
+        bot->stopAnimX(); bot->stopAnimY();
+        if (abs(bx - centroX) > 1.0f) { dx = (centroX > bx) ? vel : -vel; bot->updateAnimX(dx > 0); }
+        if (abs(by - centroY) > 1.0f) { dy = (centroY > by) ? vel : -vel; bot->updateAnimY(dy > 0); }
     }
     else if (sigC != bCol || sigR != bRow) {
         float destX = sigC * TILE + TILE / 2.0f;
         float destY = sigR * TILE + TILE / 2.0f;
-
         if (sigC != bCol) {
             dx = (destX > bx) ? vel : -vel;
             bot->updateAnimX(dx > 0);
             float centroY = bRow * TILE + TILE / 2.0f;
             if (abs(by - centroY) > 2.0f) dy = (centroY > by) ? vel : -vel;
-        }
-        else if (sigR != bRow) {
+        } else {
             dy = (destY > by) ? vel : -vel;
             bot->updateAnimY(dy > 0);
             float centroX = bCol * TILE + TILE / 2.0f;
             if (abs(bx - centroX) > 2.0f) dx = (centroX > bx) ? vel : -vel;
         }
     } else {
-        bot->stopAnimX();
-        bot->stopAnimY();
+        bot->stopAnimX(); bot->stopAnimY();
     }
 }
-
 
 void Game::run() {
 #if defined(PLATFORM_WEB)
