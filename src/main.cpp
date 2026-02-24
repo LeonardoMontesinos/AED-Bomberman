@@ -1,7 +1,7 @@
 #include "core/Game.h"
 
 int main() {
-    Game game(800, 600);
+    Game game(920, 680);
     game.run();
 
     return 0;

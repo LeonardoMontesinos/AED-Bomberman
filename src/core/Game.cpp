@@ -1,5 +1,6 @@
 #include "core/Game.h"
 #include <stdlib.h>
+#include <utility>
 #include <algorithm>
 #include <cmath>
 #include "utils/Pair.h"
@@ -50,6 +51,7 @@ Game::Game(int screenWidth, int screenHeight) {
 
     InitWindow(width, height, "Bomberman");
     InitAudioDevice();
+
 // Thiago, elimine los sonidos xdddd
     fxExplosion = LoadSound("assets/sounds/explosion.wav");
     fxVictoria  = LoadSound("assets/sounds/victoria.wav");
@@ -58,9 +60,10 @@ Game::Game(int screenWidth, int screenHeight) {
 
     SetTargetFPS(60);
 
-    texMenu      = LoadTexture("assets/textures/ui/Menu.png");
+    texMenu      = LoadTexture("assets/textures/ui/Menu.jpg");
     texGameOver  = LoadTexture("assets/textures/ui/GameOver.png");
     texBomberman = LoadTexture("assets/textures/characters/characters.png");
+    texTiles     = LoadTexture("assets/textures/items/tiles.png");
     texTiles     = LoadTexture("assets/textures/items/tiles.png");
     texArena     = LoadTexture("assets/textures/tiles/Arena.png");
 
@@ -166,7 +169,7 @@ void Game::handleInput(float dt) {
 
     // Quadtree
     if (quadtree) delete quadtree;
-    quadtree = new Quadtree<Entity>(AABB{{width/2.0f, height/2.0f}, width/2.0f}, 4);
+    quadtree = new Quadtree<Entity>(AABB{{width/2.0f, height/2.0f}, std::max(width, height) / 2.0f}, 4);
     auto m = mapa->muros.cabeza;
     while(m) { if(m->dato->activo) quadtree->insertar(m->dato); m = m->siguiente; }
     auto b = bombas.cabeza;
@@ -279,13 +282,13 @@ void Game::update(float dt) {
             jugador->timerFuego = 0; jugador->timerVelocidad = 0;
 
             jugador2->isAlive = true;
-            jugador2->caja.centro = {(float)width-60.0f, (float)height-60.0f};
+            jugador2->caja.centro = {(float)width - 60.0f, (float)height - 60.0f};
             jugador2->maxBombas = 1; jugador2->bombasActivas = 0;
             jugador2->poderFuego = 1; jugador2->velocidad = 150.0f;
             jugador2->timerFuego = 0; jugador2->timerVelocidad = 0;
 
             bot->isAlive = true;
-            bot->caja.centro = {(float)width-60.0f, (float)height-60.0f};
+            bot->caja.centro = {(float)width - 60.0f, (float)height - 60.0f};
             bot->maxBombas = 1; bot->bombasActivas = 0;
             bot->poderFuego = 1; bot->velocidad = 120.0f;
             bot->timerFuego = 0; bot->timerVelocidad = 0;
@@ -360,9 +363,8 @@ void Game::render() {
 
     if (estadoActual == MENU_PRINCIPAL) {
         ClearBackground({0, 89, 255, 255});
-        Rectangle source = {0, 0, (float)texMenu.width, (float)texMenu.height / 3.0f};
-        float scale = (float)width / texMenu.width;
-        DrawTexturePro(texMenu, source, {0,0,(float)width, source.height*scale}, {0,0}, 0, WHITE);
+        Rectangle source = {0, 0, (float)texMenu.width, (float)texMenu.height};
+        DrawTexturePro(texMenu, source, {0, 0, (float)width, (float)height}, {0,0}, 0, WHITE);
 
         Color cPVE  = (opcionMenu==0) ? YELLOW : WHITE;
         Color cPVP  = (opcionMenu==1) ? YELLOW : WHITE;
@@ -389,10 +391,19 @@ void Game::render() {
 
     else if (estadoActual == PVP || estadoActual == PVE) {
 
-        DrawTexturePro(texArena,
-            {0,0,(float)texArena.width,(float)texArena.height},
-            {0,0,(float)width,(float)height},
-            {0,0}, 0, WHITE);
+        const float TILE = 40.0f;
+        int columnas = width / TILE;
+        int filas = height / TILE;
+
+        for (int fila = 0; fila < filas; fila++) {
+            for (int col = 0; col < columnas; col++) {
+                Rectangle destSuelo = { col * TILE, fila * TILE, TILE, TILE };
+
+                Rectangle srcSuelo = { 204.0f, 0.0f, 16.0f, 16.0f };
+
+                DrawTexturePro(texTiles, srcSuelo, destSuelo, {0,0}, 0.0f, WHITE);
+            }
+        }
 
         mapa->draw();
 
@@ -443,17 +454,53 @@ void Game::render() {
         }
 
         if (debugMode && quadtree) {
-            quadtree->drawDebug();
-            auto box = [&](Player* pl, Color c) {
-                DrawRectangleLines(
-                    (int)(pl->caja.centro.x - pl->caja.medio),
-                    (int)(pl->caja.centro.y - pl->caja.medio),
-                    (int)(pl->caja.medio*2), (int)(pl->caja.medio*2), c);
-            };
-            box(jugador, BLUE);
-            if (estadoActual==PVP) box(jugador2, RED);
-            if (estadoActual==PVE) box(bot, RED);
-        }
+           quadtree->drawDebug();
+           auto box = [&](Player* pl, Color c) {
+               DrawRectangleLines(
+                   (int)(pl->caja.centro.x - pl->caja.medio),
+                   (int)(pl->caja.centro.y - pl->caja.medio),
+                   (int)(pl->caja.medio*2), (int)(pl->caja.medio*2), c);
+           };
+           box(jugador, BLUE);
+           if (estadoActual==PVP) box(jugador2, RED);
+           if (estadoActual==PVE) box(bot, RED);
+
+           // ── HUD Debug ────────────────────────────────────────────
+           // Contar entidades totales en el quadtree
+           int totalEntidades = 0;
+           auto cm = mapa->muros.cabeza;
+           while(cm) { if(cm->dato->activo) totalEntidades++; cm = cm->siguiente; }
+           auto cb = bombas.cabeza;
+           while(cb) { if(cb->dato->activo) totalEntidades++; cb = cb->siguiente; }
+           auto ce = explosiones.cabeza;
+           while(ce) { if(ce->dato->activo) totalEntidades++; ce = ce->siguiente; }
+           auto cp = powerups.cabeza;
+           while(cp) { if(cp->dato->activo) totalEntidades++; cp = cp->siguiente; }
+
+           // Contar entidades en la celda del jugador (radio de consulta = 1 tile)
+           int entidadesCerca = 0;
+           const float TILE = 40.0f;
+           AABB zonaJugador = {jugador->caja.centro, TILE * 1.5f};
+           Quadtree<Entity>::Nodo* resDebug = nullptr;
+           quadtree->consultar(zonaJugador, &resDebug);
+           auto cur = resDebug;
+           while (cur) {
+               entidadesCerca++;
+               auto del = cur; cur = cur->siguiente; delete del;
+           }
+
+           // Dibujar HUD
+           int hx = 10, hy = height - 90;
+           DrawRectangle(hx-4, hy-4, 280, 58, Fade(BLACK, 0.6f));
+           DrawText(TextFormat("Entidades en Quadtree: %d", totalEntidades),
+                    hx, hy,    18, LIME);
+           DrawText(TextFormat("Entidades cerca J1:    %d", entidadesCerca),
+                  hx, hy+22, 18, YELLOW);
+           DrawText(TextFormat("Nodo actual J1: col=%d row=%d",
+                   (int)(jugador->caja.centro.x / TILE),
+                   (int)(jugador->caja.centro.y / TILE)),
+                   hx, hy+44, 18, SKYBLUE);
+       }
 
         if (gameOver) {
             DrawRectangle(0,0,width,height,Fade(BLACK,0.7f));
@@ -700,7 +747,6 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         return makePair(cC, cR);
     };
 
-    // ── Simulación de escape ─────────────────────────────────────
     auto simularEscape = [&](int c, int r, int poder) -> bool {
         Vector<Vector<int>> gridCopia;
         gridCopia.resize(cols);
@@ -750,7 +796,6 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         return false;
     };
 
-    // ── Lógica de decisión ───────────────────────────────────────
     bool enPeligro = (grid[bCol][bRow] == 4);
     int sigC = bCol, sigR = bRow;
     bool esperando = false;
@@ -830,7 +875,6 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         }
     }
 
-    // ── Movimiento ───────────────────────────────────────────────
     if (esperando) {
         float centroX = bCol * TILE + TILE / 2.0f;
         float centroY = bRow * TILE + TILE / 2.0f;
