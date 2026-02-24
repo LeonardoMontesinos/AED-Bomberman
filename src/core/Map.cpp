@@ -3,8 +3,8 @@
 
 static const float TILE_SIZE = 40.0f;
 static const float MEDIO     = TILE_SIZE / 2.0f;
-static const int   COLUMNAS  = 800 / (int)TILE_SIZE;   // 20
-static const int   FILAS     = 600 / (int)TILE_SIZE;   // 15
+static const int   COLUMNAS  = 920 / (int)TILE_SIZE;   // 20
+static const int   FILAS     = 680 / (int)TILE_SIZE;   // 15
 
 Map::Map() {}
 
