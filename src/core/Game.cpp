@@ -1,5 +1,8 @@
 #include "core/Game.h"
 #include <stdlib.h>
+#include <utility>
+#include <algorithm>
+#include <cmath>
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
@@ -574,7 +577,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
 
     Vector<Vector<int>> grid;
     grid.resize(cols);
-    for (int i = 0; i < cols; i++) grid[i].resize(rows); // zero-init por new T[n]()
+    for (int i = 0; i < cols; i++) grid[i].resize(rows);
 
     auto m = mapa->muros.cabeza;
     while(m) {
@@ -639,14 +642,14 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         padre.resize(cols);
         for (int i = 0; i < cols; i++) {
             padre[i].resize(rows);
-            for (int j = 0; j < rows; j++) padre[i][j] = {-1, -1};
+            for (int j = 0; j < rows; j++) padre[i][j] = std::make_pair(-1, -1);
         }
 
         Vector<Vector<bool>> visitado;
         visitado.resize(cols);
-        for (int i = 0; i < cols; i++) visitado[i].resize(rows); /
+        for (int i = 0; i < cols; i++) visitado[i].resize(rows);
 
-        cola.push({bCol, bRow});
+        cola.push(std::make_pair(bCol, bRow));
         visitado[bCol][bRow] = true;
 
         int destC = -1, destR = -1;
@@ -666,15 +669,15 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                         : (grid[nc][nr]==0 || grid[nc][nr]==5);
                     if (!visitado[nc][nr] && puedePasar) {
                         visitado[nc][nr] = true;
-                        padre[nc][nr] = {cc, cr};
-                        cola.push({nc, nr});
+                        padre[nc][nr] = std::make_pair(cc, cr);
+                        cola.push(std::make_pair(nc, nr));
                     }
                 }
             }
         }
 
-        if (destC == -1) return {-1, -1};
-        if (destC == bCol && destR == bRow) return {bCol, bRow};
+        if (destC == -1) return std::make_pair(-1, -1);
+        if (destC == bCol && destR == bRow) return std::make_pair(bCol, bRow);
 
         int cC = destC, cR = destR;
         while (padre[cC][cR].first != bCol || padre[cC][cR].second != bRow) {
@@ -682,7 +685,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
             cC = pr.first; cR = pr.second;
             if (cC == -1) break;
         }
-        return {cC, cR};
+        return std::make_pair(cC, cR);
     };
 
     auto simularEscape = [&](int c, int r, int poder) -> bool {
@@ -710,7 +713,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         visitado.resize(cols);
         for (int i = 0; i < cols; i++) visitado[i].resize(rows);
 
-        cola.push({c, r});
+        cola.push(std::make_pair(c, r));
         visitado[c][r] = true;
         int dirs[4][2] = {{0,-1},{0,1},{-1,0},{1,0}};
 
@@ -726,7 +729,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                     if (!visitado[nc][nr] &&
                         (gridCopia[nc][nr]==0 || gridCopia[nc][nr]==4 || gridCopia[nc][nr]==5)) {
                         visitado[nc][nr] = true;
-                        cola.push({nc, nr});
+                        cola.push(std::make_pair(nc, nr));
                     }
                 }
             }
@@ -759,13 +762,13 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
             if (bot->bombasActivas == 0) {
                 bool atrapaJugador = false, rompeMuro = false;
 
-                if (bCol==jCol && abs(bRow-jRow) <= bot->poderFuego) {
+                if (bCol==jCol && std::abs(bRow-jRow) <= bot->poderFuego) {
                     atrapaJugador = true;
                     int minY = std::min(bRow,jRow), maxY = std::max(bRow,jRow);
                     for (int y=minY+1; y<maxY; y++)
                         if (grid[bCol][y]==1 || grid[bCol][y]==2) atrapaJugador = false;
                 }
-                else if (bRow==jRow && abs(bCol-jCol) <= bot->poderFuego) {
+                else if (bRow==jRow && std::abs(bCol-jCol) <= bot->poderFuego) {
                     atrapaJugador = true;
                     int minX = std::min(bCol,jCol), maxX = std::max(bCol,jCol);
                     for (int x=minX+1; x<maxX; x++)
@@ -796,7 +799,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                     sigC = irPowerUp.first; sigR = irPowerUp.second;
                 } else {
                     auto irJugador = buscarRuta(
-                        [&](int c, int r){ return (abs(c-jCol)+abs(r-jRow)) <= 1; }, false);
+                        [&](int c, int r){ return (std::abs(c-jCol)+std::abs(r-jRow)) <= 1; }, false);
                     if (irJugador.first != -1) {
                         sigC = irJugador.first; sigR = irJugador.second;
                     } else {
@@ -817,8 +820,8 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         float centroX = bCol * TILE + TILE / 2.0f;
         float centroY = bRow * TILE + TILE / 2.0f;
         bot->stopAnimX(); bot->stopAnimY();
-        if (abs(bx - centroX) > 1.0f) { dx = (centroX > bx) ? vel : -vel; bot->updateAnimX(dx > 0); }
-        if (abs(by - centroY) > 1.0f) { dy = (centroY > by) ? vel : -vel; bot->updateAnimY(dy > 0); }
+        if (std::abs(bx - centroX) > 1.0f) { dx = (centroX > bx) ? vel : -vel; bot->updateAnimX(dx > 0); }
+        if (std::abs(by - centroY) > 1.0f) { dy = (centroY > by) ? vel : -vel; bot->updateAnimY(dy > 0); }
     }
     else if (sigC != bCol || sigR != bRow) {
         float destX = sigC * TILE + TILE / 2.0f;
@@ -827,12 +830,12 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
             dx = (destX > bx) ? vel : -vel;
             bot->updateAnimX(dx > 0);
             float centroY = bRow * TILE + TILE / 2.0f;
-            if (abs(by - centroY) > 2.0f) dy = (centroY > by) ? vel : -vel;
+            if (std::abs(by - centroY) > 2.0f) dy = (centroY > by) ? vel : -vel;
         } else {
             dy = (destY > by) ? vel : -vel;
             bot->updateAnimY(dy > 0);
             float centroX = bCol * TILE + TILE / 2.0f;
-            if (abs(bx - centroX) > 2.0f) dx = (centroX > bx) ? vel : -vel;
+            if (std::abs(bx - centroX) > 2.0f) dx = (centroX > bx) ? vel : -vel;
         }
     } else {
         bot->stopAnimX(); bot->stopAnimY();
