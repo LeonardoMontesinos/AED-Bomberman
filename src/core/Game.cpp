@@ -6,11 +6,65 @@
 #include "utils/Pair.h"
 
 #if defined(PLATFORM_WEB)
-    #include <emscripten/emscripten.h>
+#include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #endif
 
 // Emscripten
 static Game* instanciaGlobal = nullptr;
+#if defined(PLATFORM_WEB)
+
+static bool g_audioUnlocked = false;
+
+static void UnlockWebAudioJS()
+{
+    EM_ASM({
+        try {
+            if (typeof Module !== 'undefined' && !('HEAPF32' in Module)) {
+                Object.defineProperty(Module, 'HEAPF32', {
+                    configurable: true,
+                    get: function() { return HEAPF32; }
+                });
+            }
+
+            const g = (typeof globalThis !== 'undefined') ? globalThis : window;
+            const devices = (g.miniaudio && g.miniaudio.devices) ? g.miniaudio.devices : [];
+            for (let i = 0; i < devices.length; i++) {
+                const ctx = devices[i] && devices[i].webaudio;
+                if (ctx && ctx.state === 'suspended') ctx.resume().catch(()=>{});
+            }
+        } catch (e) {}
+    });
+}
+
+static EM_BOOL OnUserGestureClick(int, const EmscriptenMouseEvent*, void*)
+{
+    if (!g_audioUnlocked) {
+        UnlockWebAudioJS();
+        g_audioUnlocked = true;
+    }
+    return EM_TRUE;
+}
+
+static EM_BOOL OnUserGestureKey(int, const EmscriptenKeyboardEvent*, void*)
+{
+    if (!g_audioUnlocked) {
+        UnlockWebAudioJS();
+        g_audioUnlocked = true;
+    }
+    return EM_TRUE;
+}
+
+static EM_BOOL OnUserGestureTouch(int, const EmscriptenTouchEvent*, void*)
+{
+    if (!g_audioUnlocked) {
+        UnlockWebAudioJS();
+        g_audioUnlocked = true;
+    }
+    return EM_TRUE;
+}
+
+#endif
 
 static void BucleWeb() {
     if (instanciaGlobal) {
@@ -251,6 +305,7 @@ void Game::generarExplosion(Bomb* bomba) {
 }
 
 void Game::update(float dt) {
+
     if (IsKeyPressed(KEY_F3)) debugMode = !debugMode;
 
     if (estadoActual == MENU_PRINCIPAL) {
@@ -901,9 +956,23 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
     }
 }
 
+#if defined(PLATFORM_WEB)
+
+static EM_BOOL OnUserGestureClick(int, const EmscriptenMouseEvent*, void*);
+static EM_BOOL OnUserGestureKey(int, const EmscriptenKeyboardEvent*, void*);
+static EM_BOOL OnUserGestureTouch(int, const EmscriptenTouchEvent*, void*);
+
+#endif
+
 void Game::run() {
 #if defined(PLATFORM_WEB)
     instanciaGlobal = this;
+
+    // “Desbloquea” audio con gesto real (click/tecla/touch)
+    emscripten_set_click_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, true, OnUserGestureClick);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, true, OnUserGestureKey);
+    emscripten_set_touchstart_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, true, OnUserGestureTouch);
+
     emscripten_set_main_loop(BucleWeb, 0, 1);
 #else
     while (!WindowShouldClose()) {
