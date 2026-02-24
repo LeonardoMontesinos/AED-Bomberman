@@ -1,8 +1,8 @@
 #include "core/Game.h"
 #include <stdlib.h>
-#include <utility>
 #include <algorithm>
 #include <cmath>
+#include "utils/Pair.h"
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
@@ -634,29 +634,28 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
 
     if (grid[bCol][bRow] == 3) grid[bCol][bRow] = 4;
 
-    // bfs
-    auto buscarRuta = [&](auto esMeta, bool ignorarPeligro) -> std::pair<int,int> {
-        Queue<std::pair<int,int>> cola;
+    auto buscarRuta = [&](auto esMeta, bool ignorarPeligro) -> Pair<int,int> {
+        Queue<Pair<int,int>> cola;
 
-        Vector<Vector<std::pair<int,int>>> padre;
+        Vector<Vector<Pair<int,int>>> padre;
         padre.resize(cols);
         for (int i = 0; i < cols; i++) {
             padre[i].resize(rows);
-            for (int j = 0; j < rows; j++) padre[i][j] = std::make_pair(-1, -1);
+            for (int j = 0; j < rows; j++) padre[i][j] = makePair(-1, -1);
         }
 
         Vector<Vector<bool>> visitado;
         visitado.resize(cols);
         for (int i = 0; i < cols; i++) visitado[i].resize(rows);
 
-        cola.push(std::make_pair(bCol, bRow));
+        cola.push(makePair(bCol, bRow));
         visitado[bCol][bRow] = true;
 
         int destC = -1, destR = -1;
         int dirs[4][2] = {{0,-1},{0,1},{-1,0},{1,0}};
 
         while (!cola.empty()) {
-            auto curr = cola.front(); cola.pop();
+            Pair<int,int> curr = cola.front(); cola.pop();
             int cc = curr.first, cr = curr.second;
 
             if (esMeta(cc, cr)) { destC = cc; destR = cr; break; }
@@ -669,25 +668,26 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                         : (grid[nc][nr]==0 || grid[nc][nr]==5);
                     if (!visitado[nc][nr] && puedePasar) {
                         visitado[nc][nr] = true;
-                        padre[nc][nr] = std::make_pair(cc, cr);
-                        cola.push(std::make_pair(nc, nr));
+                        padre[nc][nr] = makePair(cc, cr);
+                        cola.push(makePair(nc, nr));
                     }
                 }
             }
         }
 
-        if (destC == -1) return std::make_pair(-1, -1);
-        if (destC == bCol && destR == bRow) return std::make_pair(bCol, bRow);
+        if (destC == -1) return makePair(-1, -1);
+        if (destC == bCol && destR == bRow) return makePair(bCol, bRow);
 
         int cC = destC, cR = destR;
         while (padre[cC][cR].first != bCol || padre[cC][cR].second != bRow) {
-            auto pr = padre[cC][cR];
+            Pair<int,int> pr = padre[cC][cR];
             cC = pr.first; cR = pr.second;
             if (cC == -1) break;
         }
-        return std::make_pair(cC, cR);
+        return makePair(cC, cR);
     };
 
+    // ── Simulación de escape ─────────────────────────────────────
     auto simularEscape = [&](int c, int r, int poder) -> bool {
         Vector<Vector<int>> gridCopia;
         gridCopia.resize(cols);
@@ -708,17 +708,17 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         proyectar(0,-1); proyectar(0,1); proyectar(-1,0); proyectar(1,0);
         gridCopia[c][r] = 4;
 
-        Queue<std::pair<int,int>> cola;
+        Queue<Pair<int,int>> cola;
         Vector<Vector<bool>> visitado;
         visitado.resize(cols);
         for (int i = 0; i < cols; i++) visitado[i].resize(rows);
 
-        cola.push(std::make_pair(c, r));
+        cola.push(makePair(c, r));
         visitado[c][r] = true;
         int dirs[4][2] = {{0,-1},{0,1},{-1,0},{1,0}};
 
         while (!cola.empty()) {
-            auto curr = cola.front(); cola.pop();
+            Pair<int,int> curr = cola.front(); cola.pop();
             int cc = curr.first, cr = curr.second;
 
             if (gridCopia[cc][cr]==0 || gridCopia[cc][cr]==5) return true;
@@ -729,7 +729,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                     if (!visitado[nc][nr] &&
                         (gridCopia[nc][nr]==0 || gridCopia[nc][nr]==4 || gridCopia[nc][nr]==5)) {
                         visitado[nc][nr] = true;
-                        cola.push(std::make_pair(nc, nr));
+                        cola.push(makePair(nc, nr));
                     }
                 }
             }
@@ -737,12 +737,13 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         return false;
     };
 
+    // ── Lógica de decisión ───────────────────────────────────────
     bool enPeligro = (grid[bCol][bRow] == 4);
     int sigC = bCol, sigR = bRow;
     bool esperando = false;
 
     if (enPeligro) {
-        auto escape = buscarRuta([&](int c, int r){ return grid[c][r]==0 || grid[c][r]==5; }, true);
+        Pair<int,int> escape = buscarRuta([&](int c, int r){ return grid[c][r]==0 || grid[c][r]==5; }, true);
         if (escape.first != -1) { sigC = escape.first; sigR = escape.second; }
     }
     else {
@@ -783,7 +784,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
                 if (atrapaJugador || rompeMuro) {
                     if (simularEscape(bCol, bRow, bot->poderFuego)) {
                         ponerBomba = true;
-                        auto escapeInmediato = buscarRuta(
+                        Pair<int,int> escapeInmediato = buscarRuta(
                             [&](int c, int r){ return grid[c][r]==0 || grid[c][r]==5; }, true);
                         if (escapeInmediato.first != -1) {
                             sigC = escapeInmediato.first;
@@ -794,16 +795,16 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
             }
 
             if (!ponerBomba && !esperando) {
-                auto irPowerUp = buscarRuta([&](int c, int r){ return grid[c][r]==5; }, false);
+                Pair<int,int> irPowerUp = buscarRuta([&](int c, int r){ return grid[c][r]==5; }, false);
                 if (irPowerUp.first != -1) {
                     sigC = irPowerUp.first; sigR = irPowerUp.second;
                 } else {
-                    auto irJugador = buscarRuta(
+                    Pair<int,int> irJugador = buscarRuta(
                         [&](int c, int r){ return (std::abs(c-jCol)+std::abs(r-jRow)) <= 1; }, false);
                     if (irJugador.first != -1) {
                         sigC = irJugador.first; sigR = irJugador.second;
                     } else {
-                        auto irMuro = buscarRuta([&](int c, int r){
+                        Pair<int,int> irMuro = buscarRuta([&](int c, int r){
                             return (c>0      && grid[c-1][r]==2) ||
                                    (c<cols-1 && grid[c+1][r]==2) ||
                                    (r>0      && grid[c][r-1]==2) ||
@@ -816,6 +817,7 @@ void Game::pensarBot(float dt, float& dx, float& dy, bool& ponerBomba) {
         }
     }
 
+    // ── Movimiento ───────────────────────────────────────────────
     if (esperando) {
         float centroX = bCol * TILE + TILE / 2.0f;
         float centroY = bRow * TILE + TILE / 2.0f;
