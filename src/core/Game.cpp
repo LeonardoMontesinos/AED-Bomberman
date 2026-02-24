@@ -54,6 +54,7 @@ Game::Game(int screenWidth, int screenHeight) {
     fxExplosion = LoadSound("assets/sounds/explosion.wav");
     fxVictoria  = LoadSound("assets/sounds/victoria.wav");
     fxPickUp    = LoadSound("assets/sounds/powerup.wav");
+    fxDerrota   = LoadSound("assets/sounds/derrota.wav");
 
     SetTargetFPS(60);
 
@@ -90,6 +91,7 @@ Game::~Game() {
     UnloadSound(fxExplosion);
     UnloadSound(fxVictoria);
     UnloadSound(fxPickUp);
+    UnloadSound(fxDerrota);
     CloseAudioDevice();
 
     delete jugador;
@@ -294,18 +296,20 @@ void Game::update(float dt) {
         return;
     }
 
-    auto tickTimer = [](float& timer, float& stat, float reset, float dt) {
+    auto tickTimer = [](float& timer, auto& stat, auto reset, float dt) {
         if (timer > 0) { timer -= dt; if (timer <= 0) stat = reset; }
     };
-    tickTimer(jugador->timerFuego,     (float&)jugador->poderFuego, 1.0f, dt);
-    tickTimer(jugador->timerVelocidad, jugador->velocidad,         150.0f, dt);
+
+    tickTimer(jugador->timerFuego,     jugador->poderFuego, 1, dt);
+    tickTimer(jugador->timerVelocidad, jugador->velocidad,  150.0f, dt);
+
     if (estadoActual == PVP && jugador2->activo) {
-        tickTimer(jugador2->timerFuego,     (float&)jugador2->poderFuego, 1.0f, dt);
-        tickTimer(jugador2->timerVelocidad, jugador2->velocidad,         150.0f, dt);
+        tickTimer(jugador2->timerFuego,     jugador2->poderFuego, 1, dt);
+        tickTimer(jugador2->timerVelocidad, jugador2->velocidad,  150.0f, dt);
     }
     if (estadoActual == PVE && bot->activo) {
-        tickTimer(bot->timerFuego,     (float&)bot->poderFuego, 1.0f, dt);
-        tickTimer(bot->timerVelocidad, bot->velocidad,         120.0f, dt);
+        tickTimer(bot->timerFuego,     bot->poderFuego, 1, dt);
+        tickTimer(bot->timerVelocidad, bot->velocidad,  120.0f, dt);
     }
 
     handleInput(dt);
@@ -316,7 +320,7 @@ void Game::update(float dt) {
 
     if (!gameOver) {
         if (estadoActual == PVE) {
-            if (!jugador->activo)  { gameOver = true; ganador = 2; }
+            if (!jugador->activo)  { gameOver = true; ganador = 2; PlaySound(fxDerrota); } // <--- SONIDO DE DERROTA AQUI
             else if (!bot->activo) { gameOver = true; ganador = 1; PlaySound(fxVictoria); }
         } else if (estadoActual == PVP && (!jugador->activo || !jugador2->activo)) {
             gameOver = true;
@@ -377,9 +381,9 @@ void Game::render() {
         DrawText("Jugador 1: WASD para mover, ESPACIO para bomba", 50,150,20,LIGHTGRAY);
         DrawText("Jugador 2: Flechas para mover, ENTER para bomba",50,190,20,LIGHTGRAY);
         DrawText("Power-Ups:",                                      50,250,20,RED);
-        DrawText("- Fuego: Rango +1 bloque",    50,290,20,LIGHTGRAY);
+        DrawText("- Fuego: Rango +1 bloque (Solo 15 segunos, es acumulable)",    50,290,20,LIGHTGRAY);
         DrawText("- Bomba: +1 bomba extra (Permanente)",            50,330,20,LIGHTGRAY);
-        DrawText("- Velocidad: Velocidad +50",  50,370,20,LIGHTGRAY);
+        DrawText("- Velocidad: Velocidad +50 (Solo 15 segundos, es acumulable)",  50,370,20,LIGHTGRAY);
         DrawText("Presiona ESC o ENTER para volver",width/2-180,height-50,20,WHITE);
     }
 
@@ -479,9 +483,18 @@ void Game::aplicarPowerUp(Player* jug, Entity* ent) {
     ent->activo = false;
     PowerUp* pwr = (PowerUp*)ent;
     PlaySound(fxPickUp);
-    if      (pwr->tipoPoder == PWR_BOMBA)     { jug->maxBombas++; }
-    else if (pwr->tipoPoder == PWR_FUEGO)     { jug->poderFuego++;     jug->timerFuego     = 6000.0f; }
-    else if (pwr->tipoPoder == PWR_VELOCIDAD) { jug->velocidad+=15.0f; jug->timerVelocidad = 6000.0f; }
+
+    if (pwr->tipoPoder == PWR_BOMBA) {
+        jug->maxBombas++;
+    }
+    else if (pwr->tipoPoder == PWR_FUEGO) {
+        jug->poderFuego++;
+        jug->timerFuego = 15.0f;
+    }
+    else if (pwr->tipoPoder == PWR_VELOCIDAD) {
+        jug->velocidad += 50.0f;
+        jug->timerVelocidad = 15.0f;
+    }
 }
 
 void Game::moverYColisionar(Player* p, float dx, float dy) {

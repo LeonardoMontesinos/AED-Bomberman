@@ -48,6 +48,7 @@ private:
     Sound fxExplosion;
     Sound fxVictoria;
     Sound fxPickUp;
+    Sound fxDerrota;
 
     void handleInput(float dt);
     void limpiarEntidadesInactivas();
